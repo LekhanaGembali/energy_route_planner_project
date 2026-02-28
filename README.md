@@ -1,78 +1,52 @@
-# AI-Based Electric Vehicle Route Optimization System
+# AI-Based EV Route Optimization System (v2.0)
 
 ![Python Version](https://img.shields.io/badge/python-3.14t-blue)
-![Algorithm](https://img.shields.io/badge/Algorithm-A%2A%20Search-green)
+![ML Model](https://img.shields.io/badge/Model-Random%20Forest%20Regressor-orange)
+![Algorithm](https://img.shields.io/badge/Algorithm-A%2A%20Search%20(Batch)-green)
 ![Framework](https://img.shields.io/badge/Framework-Streamlit-FF4B4B)
-![API](https://img.shields.io/badge/Maps-Google%20Tiles-4285F4)
 
 ## 📌 Project Overview
-Traditional navigation systems prioritize the shortest distance or fastest time, often neglecting the specific energy constraints of Electric Vehicles (EVs). This project implements an intelligent routing engine that optimizes for **minimum energy consumption** rather than just distance.
+This system solves the "Range Anxiety" problem for Electric Vehicles by replacing standard shortest-path navigation with **Energy-Optimal Routing**. 
 
-By integrating real-world topographical data (elevation), aerodynamic drag coefficients, and rolling resistance, the system reduces "range anxiety" and provides dynamic re-routing to charging stations when battery levels are insufficient.
+Unlike Google Maps, which uses distance/time, our engine utilizes a **Random Forest Regressor** trained on 5,000 synthetic trip samples to predict the exact Watt-hour (Wh) cost of every street in a city, accounting for speed limits and topographical elevation grades.
 
 
 
 ## 🚀 Key Features
-* **A* Search Algorithm:** Uses informed heuristics to find energy-optimal paths, proactively avoiding steep inclines.
-* **Physics-Informed Energy Model:** Calculates the **Tractive Force Equation** ($F_{total} = F_{roll} + F_{grad} + F_{aero}$) to determine real-world Watt-hour (Wh) costs.
-* **Live Topographical Integration:** Fetches actual elevation data from the **OpenTopoData API** to calculate road grades.
-* **Dynamic Charging Stop Logic:** Automatically detects low battery and re-routes the vehicle to the nearest real-world charging station using **OpenStreetMap (OSMnx)** data.
-* **Google Maps Visualization:** Features a high-detail interactive dashboard using Google Maps tile layers for professional presentation.
+* **Machine Learning Pipeline:** Uses a Random Forest ensemble (100 decision trees) to map the non-linear relationship between speed, slope, and battery drain.
+* **Batch Inference Optimization:** Engineered to score 85,000+ road segments in $<1$ second by vectorized matrix operations, ensuring a smooth UI even for massive city maps.
+* **A* Heuristic Search:** Implements an informed search algorithm that "looks ahead" to find paths that bypass steep inclines.
+* **Real-World Topography:** Integrates the OpenTopoData API (SRTM 30m) to calculate road gradients ($grade = \frac{\Delta elevation}{distance}$).
+* **Dynamic Charging Detours:** Automated "Low Battery" logic that identifies real-world EV charging stations via OpenStreetMap and reroutes the vehicle mid-trip.
 
 ## 🛠️ Technical Stack
-* **Language:** Python 3.14t (Compatible with free-threaded execution)
-* **Graph Processing:** NetworkX, OSMnx
-* **Web Framework:** Streamlit
-* **Visualization:** Folium, Streamlit-Folium
-* **Data Sources:** OpenStreetMap, OpenTopoData API, Google Maps Tiles
+* **ML Core:** Scikit-Learn (RandomForestRegressor), Pandas, NumPy
+* **Graph Engine:** NetworkX, OSMnx (OpenStreetMap)
+* **Dashboard:** Streamlit, Folium (Google Maps Tile Layers)
+* **API Integration:** OpenTopoData (Topography), OpenStreetMap (Features)
 
-## 📥 Installation & Setup
+## 📊 How It Works
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/AshokSidhid/potti_project.git](https://github.com/AshokSidhid/potti_project.git)
-   cd potti_project
-   ```
+### 1. Data Generation & Training
+The system generates a synthetic dataset based on the **Tractive Force Equation**:
+$$F_{total} = F_{rolling} + F_{gradient} + F_{aerodynamic}$$
+A Random Forest model then learns the patterns of energy consumption, including regenerative braking (negative energy) on downhill slopes.
+
+### 2. Batch Scoring
+To handle large cities like Hyderabad (80k+ nodes), the model predicts the energy cost for the **entire map** in one batch immediately after the map is downloaded. This prevents the "individual prediction bottleneck" during the routing phase.
 
 
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
 
-3. **Run the application:**
-   ```bash
-   streamlit run app.py
-   ```
+### 3. Energy-Aware Routing
+* **Blue Route:** Shortest path (Dijkstra). High risk of battery depletion on steep terrain.
+* **Green Route:** Energy-efficient path (A*). Optimized by the ML model to maximize range.
 
-## 📊 Methodology
-
-### 1. The Energy Model
-
-The system "trains" on physical vehicle constants (Mass, Drag Coefficient, Frontal Area) to predict energy consumption on any given road segment:
-
-$$Energy (Wh) = \frac{(F_{rolling} + F_{gradient} + F_{aerodynamic}) \times Distance}{3600}$$
-
-### 2. A* vs Dijkstra Comparison
-
-* **Dijkstra (Shortest Path):** Minimizes raw distance ($km$). In hilly terrain like Hyderabad, this often leads to massive battery drain by driving over steep inclines.
-* **A* (Energy Efficient):** Minimizes energy cost ($Wh$). It utilizes a heuristic to identify detours that are physically longer but consume less battery by maintaining a flatter elevation profile.
-
-### 3. Smart Charging Detours
-
-If $Available Battery < Required Energy$, the system:
-
-1. Locates all charging stations within a 10km radius of the route midpoint.
-2. Selects the most efficient station.
-3. Generates a new two-leg A* path: `Source -> Charging Station -> Destination`.
+## 📥 Setup
+1. Clone the repo: `git clone https://github.com/AshokSidhid/potti_project.git`
+2. Install dependencies: `pip install -r requirements.txt`
+3. Run the app: `streamlit run app.py`
 
 ## 🤝 Contributors
-
 * **Batch-04**
 * **Lekhana G** (2300031636)
 * **Madhuri** (2300032809)
-
----
-
-*Note: This project is a functional prototype. In a production environment, real-time traffic telematics and high-resolution Digital Elevation Models (DEM) would be integrated.*
-
