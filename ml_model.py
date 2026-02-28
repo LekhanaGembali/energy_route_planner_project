@@ -4,7 +4,9 @@ from sklearn.ensemble import RandomForestRegressor
 import warnings
 import joblib
 import os
-
+import multiprocessing
+from sklearnex import patch_sklearn # Intel Patch
+patch_sklearn()
 warnings.filterwarnings('ignore')
 
 # Define the file name where the "brain" will be saved
@@ -56,16 +58,26 @@ def generate_synthetic_ev_data(num_samples=5000):
     return df
 
 def train_energy_model():
-    """Trains a new model from scratch."""
-    df = generate_synthetic_ev_data(num_samples=5000)
+    cpu_count = multiprocessing.cpu_count()
     
+    # Scale the complexity based on the CPU power
+    if cpu_count <= 4:
+        # Optimization for i3: Lower samples and fewer trees
+        samples = 1500
+        trees = 30
+    else:
+        # Full power for your i7
+        samples = 5000
+        trees = 100
+
+    df = generate_synthetic_ev_data(num_samples=samples)
     X = df[['length_m', 'speed_kph', 'slope_percent']]
     y = df['energy_consumed_wh']
     
-    # Train the model
-    rf_model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
+    from sklearn.ensemble import RandomForestRegressor
+    # Limit n_jobs to cpu_count - 1 to keep the PC responsive
+    rf_model = RandomForestRegressor(n_estimators=trees, n_jobs=cpu_count-1)
     rf_model.fit(X, y)
-    
     return rf_model
 
 def get_trained_model():
