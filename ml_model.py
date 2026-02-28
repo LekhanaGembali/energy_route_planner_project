@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 import warnings
-
+import streamlit as st
 # Suppress standard sklearn feature warnings for cleaner Streamlit output
 warnings.filterwarnings('ignore')
 
@@ -59,7 +59,7 @@ def generate_synthetic_ev_data(num_samples=5000):
     })
     
     return df
-
+@st.cache_resource
 def train_energy_model():
     """
     The core Machine Learning training loop.

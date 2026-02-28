@@ -6,7 +6,7 @@ import os
 import numpy as np
 import requests
 from streamlit_folium import folium_static
-
+ox.settings.use_cache = True
 # Import our upgraded custom modules
 from ml_model import train_energy_model, predict_energy_dynamic
 from routing import find_energy_route_astar, find_shortest_route
@@ -75,7 +75,12 @@ def add_real_elevation(G):
     nx.set_node_attributes(G, elevation_dict, 'elevation')
     G = ox.elevation.add_edge_grades(G)
     return G
-
+@st.cache_data(show_spinner=False)
+def get_map_data(center_coords, radius):
+    """Downloads the map and adds elevation. Caches the result to avoid repeating work."""
+    G = ox.graph_from_point(center_coords, dist=radius, network_type="drive")
+    G = add_real_elevation(G)
+    return G
 # -------------------------------------------------
 # Page Configuration
 # -------------------------------------------------
@@ -122,11 +127,9 @@ if st.button("Compute Route"):
         st.error("⚠️ Distance too large for a live demo! Please keep locations within ~35km of each other.")
         st.stop()
 
-    st.info(f"Downloading road network for a {radius/1000:.1f} km radius around the route...")
-    G = ox.graph_from_point(center_coords, dist=radius, network_type="drive")
-    
-    st.info("Fetching live topological data from OpenTopoData API...")
-    G = add_real_elevation(G)
+    st.info(f"Loading road network and elevation for a {radius/1000:.1f} km radius...")
+    # This will instantly load from cache if you've searched this area recently!
+    G = get_map_data(center_coords, radius)
 
     st.info("Initializing EV Physics model and Training Random Forest...")
     ev_coeffs = train_energy_model()
