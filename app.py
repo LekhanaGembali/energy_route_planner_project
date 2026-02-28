@@ -10,7 +10,8 @@ from streamlit_folium import folium_static
 ox.settings.use_cache = True
 
 # Import our custom modules
-from ml_model import train_energy_model, predict_energy_dynamic
+# Change your import line at the top to this:
+from ml_model import get_trained_model, predict_energy_dynamic
 from routing import find_energy_route_astar, find_shortest_route
 
 # -------------------------------------------------
@@ -152,10 +153,8 @@ if st.button("Compute Route"):
     # This calls our new bug-free cached function
     G = get_map_data(center_coords, radius)
 
-    st.info("Initializing EV Physics model and Training Random Forest...")
-    # This will load instantly from RAM after the first run thanks to @st.cache_resource
-    ev_coeffs = train_energy_model()
-
+    st.info("Loading pre-trained Machine Learning model from disk...")
+    ev_coeffs = get_trained_model()
     # ==========================================================
     # BATCH PREDICTION LOGIC (Instantly scores all edges)
     # ==========================================================
